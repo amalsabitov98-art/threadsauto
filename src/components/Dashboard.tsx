@@ -8,6 +8,7 @@ import AccountWorkspace from './AccountWorkspace';
 import AddAccountModal from './AddAccountModal';
 import { SettingsPanel } from './SettingsPanel';
 import MediaLibrary from './MediaLibrary';
+import { SecuritySettingsCard } from './SecuritySettingsCard';
 
 interface ThreadsAccount {
   id: string;
@@ -46,7 +47,6 @@ export function Dashboard() {
 
   const loadAccounts = useCallback(async () => {
     if (!user) return;
-    // Only show full loading spinner on initial load
     if (!initialLoadDone.current) {
       setLoading(true);
     }
@@ -90,26 +90,10 @@ export function Dashboard() {
     today.setHours(0, 0, 0, 0);
 
     const [postsData, todayData, scheduledData, accountsData] = await Promise.all([
-      supabase
-        .from('posts')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id),
-      supabase
-        .from('posts')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('status', 'published')
-        .gte('published_at', today.toISOString()),
-      supabase
-        .from('posts')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('status', 'scheduled'),
-      supabase
-        .from('threads_accounts')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('is_active', true),
+      supabase.from('posts').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('posts').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'published').gte('published_at', today.toISOString()),
+      supabase.from('posts').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'scheduled'),
+      supabase.from('threads_accounts').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_active', true),
     ]);
 
     setStats({
@@ -142,7 +126,6 @@ export function Dashboard() {
     if (!user) return;
     setCreatingDemo(true);
     try {
-      // Демо-аккаунт помечаем по access_token='demo' (не требует новой колонки в БД).
       const existingDemo = accounts.find(a => a.access_token === 'demo' || a.is_demo);
       if (existingDemo) {
         setSelectedAccountId(existingDemo.id);
@@ -201,68 +184,33 @@ export function Dashboard() {
       <nav className="bg-slate-900 border-b border-slate-800 flex-shrink-0">
         <div className="px-4 sm:px-6">
           <div className="flex justify-between items-center h-14">
-            <button
-              onClick={() => setShowGlobalSettings(false)}
-              className="flex items-center gap-3 hover:opacity-80 transition"
-            >
+            <button onClick={() => setShowGlobalSettings(false)} className="flex items-center gap-3 hover:opacity-80 transition">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
               </div>
-              <div>
-                <h1 className="text-base font-semibold text-white">Threads Manager</h1>
-              </div>
+              <div><h1 className="text-base font-semibold text-white">Threads Manager</h1></div>
             </button>
 
             <div className="flex items-center gap-6">
               <div className="hidden md:flex items-center gap-6 text-sm">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Activity className="w-4 h-4 text-blue-400" />
-                  <span>{stats.totalPosts} постов</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <TrendingUp className="w-4 h-4 text-green-400" />
-                  <span>{stats.publishedToday} сегодня</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Calendar className="w-4 h-4 text-amber-400" />
-                  <span>{stats.scheduledPosts} запланировано</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Users className="w-4 h-4 text-slate-400" />
-                  <span>{stats.activeAccounts} аккаунтов</span>
-                </div>
+                <div className="flex items-center gap-2 text-slate-400"><Activity className="w-4 h-4 text-blue-400" /><span>{stats.totalPosts} постов</span></div>
+                <div className="flex items-center gap-2 text-slate-400"><TrendingUp className="w-4 h-4 text-green-400" /><span>{stats.publishedToday} сегодня</span></div>
+                <div className="flex items-center gap-2 text-slate-400"><Calendar className="w-4 h-4 text-amber-400" /><span>{stats.scheduledPosts} запланировано</span></div>
+                <div className="flex items-center gap-2 text-slate-400"><Users className="w-4 h-4 text-slate-400" /><span>{stats.activeAccounts} аккаунтов</span></div>
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-sm text-slate-400 hidden sm:block">
-                  {profile?.full_name || profile?.email}
-                </span>
-                <button
-                  onClick={() => setShowMediaLibrary(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-sm"
-                >
-                  <Image className="w-4 h-4" />
-                  <span className="hidden sm:inline">Медиа</span>
+                <span className="text-sm text-slate-400 hidden sm:block">{profile?.full_name || profile?.email}</span>
+                <button onClick={() => setShowMediaLibrary(true)} className="flex items-center gap-2 px-3 py-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-sm">
+                  <Image className="w-4 h-4" /><span className="hidden sm:inline">Медиа</span>
                 </button>
-                <button
-                  onClick={() => setShowGlobalSettings(!showGlobalSettings)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition text-sm ${
-                    showGlobalSettings
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  <Settings className="w-4 h-4" />
-                  <span className="hidden sm:inline">Настройки</span>
+                <button onClick={() => setShowGlobalSettings(!showGlobalSettings)} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition text-sm ${showGlobalSettings ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                  <Settings className="w-4 h-4" /><span className="hidden sm:inline">Настройки</span>
                 </button>
-                <button
-                  onClick={signOut}
-                  className="flex items-center gap-2 px-3 py-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-sm"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">Выйти</span>
+                <button onClick={signOut} className="flex items-center gap-2 px-3 py-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-sm">
+                  <LogOut className="w-4 h-4" /><span className="hidden sm:inline">Выйти</span>
                 </button>
               </div>
             </div>
@@ -276,10 +224,7 @@ export function Dashboard() {
           allAccounts={accounts}
           selectedAccountId={showGlobalSettings ? null : selectedAccountId}
           selectedFolderId={selectedFolderId}
-          onSelectAccount={(id) => {
-            setShowGlobalSettings(false);
-            handleSelectAccount(id);
-          }}
+          onSelectAccount={(id) => { setShowGlobalSettings(false); handleSelectAccount(id); }}
           onSelectFolder={setSelectedFolderId}
           onAddAccount={handleAddAccount}
           onAccountsChange={loadAccounts}
@@ -295,56 +240,25 @@ export function Dashboard() {
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-slate-900">Настройки</h2>
-                <button
-                  type="button"
-                  onClick={() => setShowGlobalSettings(false)}
-                  className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition shadow-sm"
-                >
-                  Вернуться на панель
-                </button>
+                <button type="button" onClick={() => setShowGlobalSettings(false)} className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition shadow-sm">Вернуться на панель</button>
               </div>
+              <SecuritySettingsCard />
               <SettingsPanel />
             </div>
           </div>
         ) : selectedAccount && user ? (
-          <AccountWorkspace
-            account={selectedAccount}
-            user={user}
-            onAccountUpdate={handleAccountAdded}
-            onAccountDelete={handleAccountDeleted}
-          />
+          <AccountWorkspace account={selectedAccount} user={user} onAccountUpdate={handleAccountAdded} onAccountDelete={handleAccountDeleted} />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-slate-50">
             <div className="text-center max-w-md px-4">
-              <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Users className="w-10 h-10 text-slate-400" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-3">
-                {accounts.length === 0 ? 'Добавьте первый аккаунт' : 'Выберите аккаунт'}
-              </h2>
-              <p className="text-slate-600 mb-6">
-                {accounts.length === 0
-                  ? 'Подключите Threads аккаунт чтобы начать автоматизацию публикаций'
-                  : 'Выберите аккаунт в боковой панели для работы с шаблонами и настройками'}
-              </p>
+              <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-6"><Users className="w-10 h-10 text-slate-400" /></div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-3">{accounts.length === 0 ? 'Добавьте первый аккаунт' : 'Выберите аккаунт'}</h2>
+              <p className="text-slate-600 mb-6">{accounts.length === 0 ? 'Подключите Threads аккаунт чтобы начать автоматизацию публикаций' : 'Выберите аккаунт в боковой панели для работы с шаблонами и настройками'}</p>
               {accounts.length === 0 && (
                 <div className="flex flex-col items-center gap-3">
-                  <button
-                    onClick={handleAddAccount}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium"
-                  >
-                    Добавить аккаунт
-                  </button>
-                  <button
-                    onClick={handleCreateDemo}
-                    disabled={creatingDemo}
-                    className="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl hover:border-slate-400 transition font-medium disabled:opacity-50"
-                  >
-                    {creatingDemo ? 'Создаём…' : 'Попробовать без подключения'}
-                  </button>
-                  <p className="text-xs text-slate-400 max-w-xs">
-                    Демо-режим: генерация, шаблоны и карусели работают. Публикация в Threads отключена.
-                  </p>
+                  <button onClick={handleAddAccount} className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium">Добавить аккаунт</button>
+                  <button onClick={handleCreateDemo} disabled={creatingDemo} className="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl hover:border-slate-400 transition font-medium disabled:opacity-50">{creatingDemo ? 'Создаём…' : 'Попробовать без подключения'}</button>
+                  <p className="text-xs text-slate-400 max-w-xs">Демо-режим: генерация, шаблоны и карусели работают. Публикация в Threads отключена.</p>
                 </div>
               )}
             </div>
@@ -352,19 +266,8 @@ export function Dashboard() {
         )}
       </div>
 
-      {showAddModal && user && (
-        <AddAccountModal
-          userId={user.id}
-          onClose={() => setShowAddModal(false)}
-          onSuccess={handleAccountAdded}
-        />
-      )}
-
-      {showMediaLibrary && (
-        <MediaLibrary
-          onClose={() => setShowMediaLibrary(false)}
-        />
-      )}
+      {showAddModal && user && <AddAccountModal userId={user.id} onClose={() => setShowAddModal(false)} onSuccess={handleAccountAdded} />}
+      {showMediaLibrary && <MediaLibrary onClose={() => setShowMediaLibrary(false)} />}
     </div>
   );
 }
